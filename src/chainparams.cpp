@@ -154,17 +154,18 @@ public:
          * The characters are rarely used upper ASCII, not valid as UTF-8, and produce
          * a large 32-bit integer with any alignment.
          */
-
+/**     // Old pchMessageStart
         pchMessageStart[0] = 0xc0;
         pchMessageStart[1] = 0xc0;
         pchMessageStart[2] = 0xc0;
         pchMessageStart[3] = 0xc0;
-/**
+**/
+        // New pchMessageStart
         pchMessageStart[0] = 0xfa;
         pchMessageStart[1] = 0xbf;
         pchMessageStart[2] = 0xb5;
         pchMessageStart[3] = 0xda;
-**/
+
 
 	LogPrintf("INFO: Using new messageStart for protocol v2.0.0.0 fork at block %d\n", consensus.V2_0ForkHeight);
 
