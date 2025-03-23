@@ -53,6 +53,7 @@ struct Params {
     int BIP66Height;
     int V3ForkHeight;
     int AUXPOWHeight;
+    int V2_0ForkHeight;
     /**
      * Minimum blocks including miner confirmation of the total of 2016 blocks in a retargeting period,
      * (nPowTargetTimespan / nPowTargetSpacing) which is also used for BIP9 deployments.

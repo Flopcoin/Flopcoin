@@ -1262,6 +1262,8 @@ UniValue getblockchaininfo(const JSONRPCRequest& request)
     obj.pushKV("softforks",             softforks);
     obj.pushKV("bip9_softforks", bip9_softforks);
     obj.pushKV("warnings", GetWarnings("statusbar"));
+    obj.pushKV("v2_0_fork_height", consensusParams.V2_0ForkHeight);
+    obj.pushKV("message_start", HexStr(Params().MessageStart(), Params().MessageStart() + 4));
     return obj;
 }
 

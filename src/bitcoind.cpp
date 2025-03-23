@@ -153,6 +153,8 @@ bool AppInit(int argc, char* argv[])
         {
 #if HAVE_DECL_DAEMON
             fprintf(stdout, "Flopcoin server starting\n");
+            fprintf(stdout, "Flopcoin v2.x daemon starting with new messageStart bytes enabled.\n");
+	    fprintf(stdout, "Using messageStart: %s\n", HexStr(Params().MessageStart(), Params().MessageStart() + 4).c_str());
 
             // Daemonize
             if (daemon(1, 0)) { // don't chdir (1), do close FDs (0)

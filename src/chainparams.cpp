@@ -80,6 +80,7 @@ public:
         consensus.nMajorityWindow = 2000;
 	consensus.V3ForkHeight = 111000;
 	consensus.AUXPOWHeight = 110000;
+	consensus.V2_0ForkHeight = 115000;
         consensus.BIP34Height = 100;
         consensus.BIP34Hash = uint256S("0x67cf3c48ee2ff1db2598e59b8841c85c3e080758bd5a105158bccf4d268c0ab5");
         consensus.BIP65Height = consensus.V3ForkHeight;
@@ -153,10 +154,20 @@ public:
          * The characters are rarely used upper ASCII, not valid as UTF-8, and produce
          * a large 32-bit integer with any alignment.
          */
+
         pchMessageStart[0] = 0xc0;
         pchMessageStart[1] = 0xc0;
         pchMessageStart[2] = 0xc0;
         pchMessageStart[3] = 0xc0;
+/**
+        pchMessageStart[0] = 0xfa;
+        pchMessageStart[1] = 0xbf;
+        pchMessageStart[2] = 0xb5;
+        pchMessageStart[3] = 0xda;
+**/
+
+	LogPrintf("INFO: Using new messageStart for protocol v2.0.0.0 fork at block %d\n", consensus.V2_0ForkHeight);
+
         nDefaultPort = 32552;
         nPruneAfterHeight = 100000;
 
