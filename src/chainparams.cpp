@@ -82,7 +82,7 @@ public:
         consensus.nMajorityWindow = 2000;
 	consensus.V3ForkHeight = 111000;
 	consensus.AUXPOWHeight = 110000;
-	consensus.V2_0ForkHeight = 117000;
+	consensus.V2_0ForkHeight = 120000;
 	consensus.nDevFeeEndHeight = 600000;
         consensus.BIP34Height = 100;
         consensus.BIP34Hash = uint256S("0x67cf3c48ee2ff1db2598e59b8841c85c3e080758bd5a105158bccf4d268c0ab5");
