@@ -51,6 +51,8 @@
 #include <boost/math/distributions/poisson.hpp>
 #include <boost/thread.hpp>
 
+#include "base58.h"
+
 #if defined(NDEBUG)
 # error "Flopcoin cannot be compiled without assertions."
 #endif
@@ -1999,6 +2001,64 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
                          error("ConnectBlock(): coinbase pays too much (actual=%d vs limit=%d)",
                                block.vtx[0]->GetValueOut(), blockReward),
                                REJECT_INVALID, "bad-cb-amount");
+
+
+
+    // BEGIN DEV FEE ENFORCEMENT //
+    if (pindex->nHeight >= chainparams.GetConsensus(pindex->nHeight).V2_0ForkHeight && 
+        pindex->nHeight < chainparams.GetConsensus(pindex->nHeight).nDevFeeEndHeight) {
+        const std::string& expectedDevAddress = chainparams.GetDevFeeAddress();
+        CBitcoinAddress devAddr(expectedDevAddress);
+        if (!devAddr.IsValid())
+            return state.DoS(100, error("ConnectBlock(): invalid expected dev fee address"), REJECT_INVALID, "bad-devfee-addr");
+
+        CScript expectedDevScript = GetScriptForDestination(devAddr.Get());
+        //CAmount expectedDevFee = GetFlopcoinBlockSubsidy(pindex->nHeight, chainparams.GetConsensus(pindex->nHeight), hashPrevBlock) * 5 / 100;
+        CAmount expectedDevFee = GetFlopcoinBlockSubsidy(
+            pindex->nHeight, 
+            chainparams.GetConsensus(pindex->nHeight), 
+            hashPrevBlock
+        ) * chainparams.GetDevFeePercentage() / 100;
+
+        bool devFeePaid = false;
+        for (const CTxOut& out : block.vtx[0]->vout) {
+            if (out.scriptPubKey == expectedDevScript) {
+                if (out.nValue == expectedDevFee) {
+                    devFeePaid = true;
+                    break;
+                } else {
+                    LogPrintf("Dev fee incorrect: expected %s, got %s (script matched)\n", 
+                              FormatMoney(expectedDevFee), FormatMoney(out.nValue));
+                }
+            }
+        }
+
+        if (!devFeePaid) {
+            return state.DoS(200, error("ConnectBlock(): dev fee missing or incorrect at height %d (expecting >= %s to %s)", 
+                pindex->nHeight, FormatMoney(expectedDevFee), expectedDevAddress),
+                REJECT_INVALID, "bad-devfee");
+        }
+
+
+        // Make sure NO dev fee output is present after height 600000
+        if (pindex->nHeight >= chainparams.GetConsensus(pindex->nHeight).nDevFeeEndHeight) {
+            for (const CTxOut& out : block.vtx[0]->vout) {
+                if (out.scriptPubKey == expectedDevScript) {
+                    return state.DoS(100, error("ConnectBlock(): dev fee must not be present after height 600000"), REJECT_INVALID, "bad-devfee");
+                }
+            }
+        }
+        static bool devFeeEndLogged = false;
+        if (pindex->nHeight == chainparams.GetConsensus(pindex->nHeight).nDevFeeEndHeight && !devFeeEndLogged) {
+            LogPrintf("Dev fee enforcement ended at block height %d\n", pindex->nHeight);
+            devFeeEndLogged = true;
+        }
+    }
+    // END DEV FEE ENFORCEMENT //
+
+
+
+
 
     if (!control.Wait())
         return state.DoS(100, false);

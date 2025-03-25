@@ -129,6 +129,9 @@ void BlockAssembler::resetBlock()
     blockFinished = false;
 }
 
+#include "base58.h"
+#include "script/standard.h"
+
 std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& scriptPubKeyIn, bool fMineWitnessTx)
 {
     int64_t nTimeStart = GetTimeMicros();
@@ -193,8 +196,54 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     coinbaseTx.vin[0].prevout.SetNull();
     coinbaseTx.vout.resize(1);
     coinbaseTx.vout[0].scriptPubKey = scriptPubKeyIn;
-    coinbaseTx.vout[0].nValue = nFees + GetFlopcoinBlockSubsidy(nHeight, consensus, pindexPrev->GetBlockHash(
-));
+    ////coinbaseTx.vout[0].nValue = nFees + GetFlopcoinBlockSubsidy(nHeight, consensus, pindexPrev->GetBlockHash());
+
+
+    CAmount nSubsidy = GetFlopcoinBlockSubsidy(nHeight, consensus, pindexPrev->GetBlockHash());
+    CAmount nTotalReward = nFees + nSubsidy;
+
+    // START  Modified Coinbase Tx Section - starts at V2_0ForkHeight and ends at height 600000 //
+    if (nHeight >= consensus.V2_0ForkHeight && nHeight < consensus.nDevFeeEndHeight) {
+      //CAmount devFee = nSubsidy * 5 / 100; // 5% of block subsidy
+      CAmount devFee = nSubsidy * chainparams.GetDevFeePercentage() / 100;
+      CAmount minerReward = nTotalReward - devFee;
+
+      // Setup coinbase transaction
+      //CMutableTransaction coinbaseTx;
+      coinbaseTx.vin.resize(1);
+      coinbaseTx.vin[0].prevout.SetNull();
+      coinbaseTx.vin[0].scriptSig = CScript() << nHeight << OP_0;
+
+      // Coinbase outputs
+      coinbaseTx.vout.resize(2);
+      coinbaseTx.vout[0].nValue = minerReward;
+      coinbaseTx.vout[0].scriptPubKey = scriptPubKeyIn;
+
+      // Developer reward output
+      const std::string& devAddress = chainparams.GetDevFeeAddress();
+      ////CScript devScript = GetScriptForDestination(DecodeDestination(devAddress));
+      CBitcoinAddress address(devAddress);
+      if (!address.IsValid())
+          throw std::runtime_error("Invalid dev fee address");
+      CScript devScript = GetScriptForDestination(address.Get());
+      LogPrintf("Dev fee active at height %d: %s receives %s\n", nHeight, devAddress, FormatMoney(devFee));
+
+      coinbaseTx.vout[1].nValue = devFee;
+      coinbaseTx.vout[1].scriptPubKey = devScript;
+    // END  Modified Coinbase Tx Section //
+    } else {
+      // No dev fee before V2_0ForkHeight or after DevFeeEndHeight
+      coinbaseTx.vout.resize(1);
+      coinbaseTx.vout[0].nValue = nTotalReward;
+      coinbaseTx.vout[0].scriptPubKey = scriptPubKeyIn;
+
+      static bool devFeeEndedLogged = false;
+      if (!devFeeEndedLogged) {
+          LogPrintf("Dev fee ended at height %d. Mining with full rewards.\n", nHeight);
+          devFeeEndedLogged = true;
+      }
+    }
+
     coinbaseTx.vin[0].scriptSig = CScript() << nHeight << OP_0;
     pblock->vtx[0] = MakeTransactionRef(std::move(coinbaseTx));
     pblocktemplate->vchCoinbaseCommitment = GenerateCoinbaseCommitment(*pblock, pindexPrev, consensus);

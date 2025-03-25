@@ -74,13 +74,16 @@ private:
 public:
     CMainParams() {
         strNetworkID = "main";
+	strDevFeeAddress = "FLDe9sDaU63Y6GALoSAJfTJ8NtkR9goLok";
+	nDevFeePercentage = 10;
         consensus.nSubsidyHalvingInterval = 100000;
         consensus.nMajorityEnforceBlockUpgrade = 1500;
         consensus.nMajorityRejectBlockOutdated = 1900;
         consensus.nMajorityWindow = 2000;
 	consensus.V3ForkHeight = 111000;
 	consensus.AUXPOWHeight = 110000;
-	consensus.V2_0ForkHeight = 120000;
+	consensus.V2_0ForkHeight = 117000;
+	consensus.nDevFeeEndHeight = 600000;
         consensus.BIP34Height = 100;
         consensus.BIP34Hash = uint256S("0x67cf3c48ee2ff1db2598e59b8841c85c3e080758bd5a105158bccf4d268c0ab5");
         consensus.BIP65Height = consensus.V3ForkHeight;
@@ -227,74 +230,84 @@ private:
 public:
     CTestNetParams() {
         strNetworkID = "test";
-
-        // Blocks 0 - 144999 are pre-Digishield
+        // Blocks 0 + are pre-Digishield
         consensus.nHeightEffective = 0;
-        consensus.nPowTargetTimespan = 1 * 60 * 60; // pre-digishield: 4 hours
-        consensus.fDigishieldDifficultyCalculation = false;
-        consensus.nCoinbaseMaturity = 30;
-        consensus.fPowAllowMinDifficultyBlocks = true;
-        consensus.fPowAllowDigishieldMinDifficultyBlocks = false;
+	strDevFeeAddress = "PtTNHA68jc539AuWgqYsSGrzVyYpbu9frp";
+	nDevFeePercentage = 10;
         consensus.nSubsidyHalvingInterval = 100000;
         consensus.nMajorityEnforceBlockUpgrade = 501;
         consensus.nMajorityRejectBlockOutdated = 750;
         consensus.nMajorityWindow = 1000;
-        // BIP34 is never enforced in Flopcoin v2 blocks, so we enforce from v3
+	consensus.V3ForkHeight = 0;
+	consensus.AUXPOWHeight = 0;
+	consensus.V2_0ForkHeight = 0;
+	consensus.nDevFeeEndHeight = 600000;
         consensus.BIP34Height = 0;
-        consensus.BIP34Hash = uint256(); //uint2565(0x00)
+        consensus.BIP34Hash = uint256S("0xf4a99d0171235dab2cc2efb14055b86f96c9eda1653ff0a3b2153146391fe300");
         consensus.BIP65Height = 0;
-        consensus.BIP66Height = 708658; // 21b8b97dcdb94caa67c7f8f6dbf22e61e0cfe0e46e1fff3528b22864659e9b38 - this is the last block that could be v2, 1900 blocks past the last v2 block
-        consensus.powLimit = uint256S("0x00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"); // ~uint256(0) >> 20;
-        consensus.nPowTargetTimespan = 1 * 60 * 60; // pre-digishield: 4 hours
-        consensus.nPowTargetSpacing = 60; // 1 minute
+        consensus.BIP66Height = 0;
+        consensus.powLimit = uint256S("0x000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"); // ~uint256(0) >> 20;
+        consensus.nPowTargetTimespan = 24 * 60 * 60;
+        consensus.nPowTargetSpacing = 30;
+        consensus.fDigishieldDifficultyCalculation = false;
+        consensus.nCoinbaseMaturity = 30;
+        consensus.fPowAllowMinDifficultyBlocks = true;
+        consensus.fPowAllowDigishieldMinDifficultyBlocks = false;
         consensus.fPowNoRetargeting = false;
-        consensus.nRuleChangeActivationThreshold = 2880; // 2 days (note this is significantly lower than Bitcoin standard)
-        consensus.nMinerConfirmationWindow = 10080; // 60 * 24 * 7 = 10,080 blocks, or one week
+        consensus.nRuleChangeActivationThreshold = 180;
+        consensus.nMinerConfirmationWindow = 240;
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
-        consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nStartTime = 1199145601; // January 1, 2008
-        consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nTimeout = 1230767999; // December 31, 2008
+        consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nStartTime = -1;
+        consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nTimeout = -1;
 
         // Deployment of BIP68, BIP112, and BIP113.
         // XXX: BIP heights and hashes all need to be updated to Flopcoin values
         consensus.vDeployments[Consensus::DEPLOYMENT_CSV].bit = 0;
-        consensus.vDeployments[Consensus::DEPLOYMENT_CSV].nStartTime = 1456790400; // March 1st, 2016
-        consensus.vDeployments[Consensus::DEPLOYMENT_CSV].nTimeout = 1493596800; // May 1st, 2017
+        consensus.vDeployments[Consensus::DEPLOYMENT_CSV].nStartTime = -1;
+        consensus.vDeployments[Consensus::DEPLOYMENT_CSV].nTimeout = -1;
 
         // Deployment of SegWit (BIP141, BIP143, and BIP147)
         consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].bit = 1;
-        consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nStartTime = 1462060800; // May 1st 2016
-        consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nTimeout = 0; // Disabled
+        consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nStartTime = -1;
+        consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nTimeout = -1;
+
+        // Disable all unused version bits (3 to 28) for security
+        for (int i = 3; i < (int)Consensus::MAX_VERSION_BITS_DEPLOYMENTS; i++) {
+            consensus.vDeployments[i].bit = -1;
+            consensus.vDeployments[i].nStartTime = -1;
+            consensus.vDeployments[i].nTimeout = -1;
+        }
 
         // The best chain should have at least this much work.
-        consensus.nMinimumChainWork = uint256S("0x00");
+        consensus.nMinimumChainWork = uint256S("0x0000000000000000000000000000000000000000000000000000000000100010");
 
         // By default assume that the signatures in ancestors of this block are valid.
-        consensus.defaultAssumeValid = uint256S("0xbb0a78264637406b6360aad926284d544d7049f45189db5664f3c4d07350559e");
+        consensus.defaultAssumeValid = uint256S("0xf4a99d0171235dab2cc2efb14055b86f96c9eda1653ff0a3b2153146391fe300");
 
         // AuxPoW parameters
-        consensus.nAuxpowChainId = 0x0062; // 98 - Josh Wise!
+        consensus.nAuxpowChainId = 0x0f44;
         consensus.fStrictChainId = false;
-        consensus.nHeightEffective = 0;
         consensus.fAllowLegacyBlocks = true;
+        consensus.nHeightEffective = 0;
 
-        // Blocks 145000 - 157499 are Digishield without minimum difficulty on all blocks
+        // Blocks 0 + digishielconsensus phase
         digishieldConsensus = consensus;
-        digishieldConsensus.nHeightEffective = 145000;
-        digishieldConsensus.nPowTargetTimespan = 60; // post-digishield: 1 minute
+        digishieldConsensus.nHeightEffective = 0;
+        digishieldConsensus.nPowTargetTimespan = 60;
         digishieldConsensus.fDigishieldDifficultyCalculation = true;
         digishieldConsensus.fSimplifiedRewards = true;
         digishieldConsensus.fPowAllowMinDifficultyBlocks = false;
-        digishieldConsensus.nCoinbaseMaturity = 240;
+        digishieldConsensus.nCoinbaseMaturity = 30;
 
-        // Blocks 157500 - 158099 are Digishield with minimum difficulty on all blocks
+        // Blocks 0 + are Digishield with minimum difficulty on all blocks
         minDifficultyConsensus = digishieldConsensus;
-        minDifficultyConsensus.nHeightEffective = 157500;
+        minDifficultyConsensus.nHeightEffective = 0;
         minDifficultyConsensus.fPowAllowDigishieldMinDifficultyBlocks = true;
         minDifficultyConsensus.fPowAllowMinDifficultyBlocks = true;
 
-        // Enable AuxPoW at 158100
+        // Enable AuxPoW at 0
         auxpowConsensus = minDifficultyConsensus;
-        auxpowConsensus.nHeightEffective = 158100;
+        auxpowConsensus.nHeightEffective = consensus.AUXPOWHeight;
         auxpowConsensus.fPowAllowDigishieldMinDifficultyBlocks = true;
         auxpowConsensus.fAllowLegacyBlocks = false;
 
@@ -304,10 +317,10 @@ public:
         digishieldConsensus.pRight = &minDifficultyConsensus;
         minDifficultyConsensus.pRight = &auxpowConsensus;
 
-        pchMessageStart[0] = 0xfc;
-        pchMessageStart[1] = 0xc1;
-        pchMessageStart[2] = 0xb7;
-        pchMessageStart[3] = 0xdc;
+        pchMessageStart[0] = 0xd5;
+        pchMessageStart[1] = 0xa9;
+        pchMessageStart[2] = 0xf0;
+        pchMessageStart[3] = 0xb2;
         nDefaultPort = 44556;
         nPruneAfterHeight = 1000;
 
@@ -319,17 +332,17 @@ public:
         assert(consensus.hashGenesisBlock == uint256S("0xf4a99d0171235dab2cc2efb14055b86f96c9eda1653ff0a3b2153146391fe300"));
         assert(genesis.hashMerkleRoot == uint256S("0xd646459741e2708a78a3c00f7d42790509ef11c8448930b478bbcf6b6ee25961"));
 
-        vSeeds.clear();
+        //vSeeds.clear();
         // nodes with support for servicebits filtering should be at the top
-        vSeeds.push_back(CDNSSeedData("test-node.flopcoin.net", "test-seed.flopcoin.net"));
+        vSeeds.push_back(CDNSSeedData("cc", "seeds.altcoinspool.cc"));
 
-        base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,113); // 0x71
-        base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,196); // 0xc4
-        base58Prefixes[SECRET_KEY] =     std::vector<unsigned char>(1,241); // 0xf1
+        base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,56);
+        base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,76);
+        base58Prefixes[SECRET_KEY] =     std::vector<unsigned char>(1,184);
         base58Prefixes[EXT_PUBLIC_KEY] = boost::assign::list_of(0x04)(0x35)(0x87)(0xcf).convert_to_container<std::vector<unsigned char> >();
         base58Prefixes[EXT_SECRET_KEY] = boost::assign::list_of(0x04)(0x35)(0x83)(0x94).convert_to_container<std::vector<unsigned char> >();
 
-        vFixedSeeds = std::vector<SeedSpec6>(pnSeed6_test, pnSeed6_test + ARRAYLEN(pnSeed6_test));
+        //vFixedSeeds = std::vector<SeedSpec6>(pnSeed6_test, pnSeed6_test + ARRAYLEN(pnSeed6_test));
 
         fMiningRequiresPeers = true;
         fDefaultConsistencyChecks = false;
@@ -342,10 +355,10 @@ public:
         };
 
         chainTxData = ChainTxData{
-            // Data as of block a2179767a87ee4e95944703976fee63578ec04fa3ac2fc1c9c2c83587d096977 (height 1202214)
+            // Data as of block f4a99d0171235dab2cc2efb14055b86f96c9eda1653ff0a3b2153146391fe300(height 0)
             1733419386, // * UNIX timestamp of last checkpoint block
             0,    // * total number of transactions between genesis and last checkpoint
-            100 // * estimated number of transactions per day after checkpoint
+            0.000 // * estimated number of transactions per day after checkpoint
         };
 
     }

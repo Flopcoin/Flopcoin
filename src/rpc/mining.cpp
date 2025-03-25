@@ -29,6 +29,7 @@
 #include <boost/assign/list_of.hpp>
 
 #include <univalue.h>
+#include "flopcoin.h"
 
 using namespace std;
 
@@ -349,6 +350,9 @@ std::string gbt_vb_name(const Consensus::DeploymentPos pos) {
     }
     return s;
 }
+
+//CAmount GetFlopcoinBlockSubsidy(int nHeight, const Consensus::Params& consensusParams, const uint256& prevHash);
+//CAmount GetFlopcoinBlockSubsidy(int nHeight, const Consensus::Params& consensusParams, uint256 prevHash);
 
 UniValue getblocktemplate(const JSONRPCRequest& request)
 {
@@ -739,6 +743,33 @@ UniValue getblocktemplate(const JSONRPCRequest& request)
     if (!pblocktemplate->vchCoinbaseCommitment.empty() && fSupportsSegwit) {
         result.pushKV("default_witness_commitment", HexStr(pblocktemplate->vchCoinbaseCommitment.begin(), pblocktemplate->vchCoinbaseCommitment.end()));
     }
+
+    // BEGIN DEVFEE INFO FOR POOLS //
+    if ((pindexPrev->nHeight + 1) >= consensusParams.V2_0ForkHeight) {
+        if ((pindexPrev->nHeight + 1) < consensusParams.nDevFeeEndHeight) {
+            // Dev fee is active
+            CAmount nSubsidy = GetFlopcoinBlockSubsidy(pindexPrev->nHeight + 1, consensusParams, pindexPrev->GetBlockHash());
+            CAmount expectedDevFee = nSubsidy * Params().GetDevFeePercentage() / 100;
+
+            UniValue devfee(UniValue::VOBJ);
+            devfee.pushKV("payee", Params().GetDevFeeAddress());
+            devfee.pushKV("amount", (int64_t)expectedDevFee);
+            result.pushKV("devfee", devfee);
+            result.pushKV("devfee_payments_running", true);
+            result.pushKV("devfee_percentage", Params().GetDevFeePercentage());
+            result.pushKV("devfee_start_height", consensusParams.V2_0ForkHeight);
+            result.pushKV("devfee_end_height", consensusParams.nDevFeeEndHeight);
+        } else {
+            // Dev fee ended
+            UniValue devfee(UniValue::VOBJ);
+            devfee.pushKV("payee", Params().GetDevFeeAddress());
+            devfee.pushKV("amount", 0);
+            result.pushKV("devfee", devfee);
+            result.pushKV("devfee_payments_running", false);
+            result.pushKV("devfee_payment_ended", true);
+        }
+    }
+    // END DEVFEE INFO FOR POOLS //
 
     return result;
 }

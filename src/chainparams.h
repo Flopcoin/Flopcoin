@@ -81,9 +81,13 @@ public:
     const std::vector<SeedSpec6>& FixedSeeds() const { return vFixedSeeds; }
     const CCheckpointData& Checkpoints() const { return checkpointData; }
     const ChainTxData& TxData() const { return chainTxData; }
+    std::string GetDevFeeAddress() const { return strDevFeeAddress; }
+    int GetDevFeePercentage() const { return nDevFeePercentage; }
 
 protected:
     CChainParams() {}
+    std::string strDevFeeAddress;
+    int nDevFeePercentage;
 
     Consensus::Params consensus;
     Consensus::Params *pConsensusRoot; // Binary search tree root
