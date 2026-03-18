@@ -13,7 +13,7 @@ For information about the default fees used on the Flopcoin network, please
 refer to the [fee recommendation](doc/fee-recommendation.md).
 <br/><br/>
 
-**Website:** [http://flopcoin.net/](http://flopcoin.net/)
+**Website:** [https://flopcoin.lovable.app](https://flopcoin.lovable.app)
 
 ## Dogecoin Differences
 
@@ -146,7 +146,7 @@ Here are some places to visit:
 
 
 * [Discord](https://discord.gg/8qJqXQaczJ)
-* [Website](http://flopcoin.net/)
+* [Website](https://flopcoin.lovable.app)
 * [X](https://x.com/flopcoin_dev)
 
 ## Future Plan
