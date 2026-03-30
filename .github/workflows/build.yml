@@ -1,0 +1,76 @@
+name: Build Flopcoin Wallet
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-linux:
+    name: Build Linux
+    runs-on: ubuntu-22.04
+    env:
+      CC: gcc
+      CXX: g++
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential libtool autotools-dev automake pkg-config \
+                              libssl-dev libboost-all-dev libdb++-dev libevent-dev bsdmainutils git
+      - name: Build Flopcoin
+        run: |
+          ./autogen.sh
+          ./configure
+          make -j$(nproc)
+      - name: Upload Linux binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: flopcoin-linux
+          path: src/flopcoind
+
+  build-windows:
+    name: Build Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Visual Studio
+        uses: microsoft/setup-msbuild@v1
+      - name: Install vcpkg and dependencies
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
+          C:\vcpkg\bootstrap-vcpkg.bat
+          C:\vcpkg\vcpkg install boost:x64-windows openssl:x64-windows
+      - name: Build Flopcoin
+        run: msbuild src\flopcoin.sln /p:Configuration=Release
+      - name: Upload Windows binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: flopcoin-windows
+          path: src\Release\flopcoind.exe
+
+  build-macos:
+    name: Build macOS
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: |
+          brew update
+          brew install autoconf automake libtool boost openssl berkeley-db4 pkg-config libevent
+          export BOOST_ROOT=/usr/local/opt/boost
+          export PATH=$BOOST_ROOT/bin:$PATH
+          export LDFLAGS="-L$BOOST_ROOT/lib -L/usr/local/opt/openssl/lib"
+          export CPPFLAGS="-I$BOOST_ROOT/include -I/usr/local/opt/openssl/include"
+          export PKG_CONFIG_PATH="$BOOST_ROOT/lib/pkgconfig"
+      - name: Build Flopcoin
+        run: |
+          ./autogen.sh
+          ./configure
+          make -j$(sysctl -n hw.ncpu)
+      - name: Upload macOS binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: flopcoin-macos
+          path: src/flopcoind
